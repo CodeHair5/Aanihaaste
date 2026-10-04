@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Äänen Taajuushaaste - Ääniharjoitus Yläkoululle</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      touch-action: manipulation;
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    }
+    .progress-glow {
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+    }
+    .tuner-target-zone {
+      background: rgba(16, 185, 129, 0.2);
+      border-left: 2px solid #10b981;
+      border-right: 2px solid #10b981;
+    }
+  </style>
+</head>
+<body class="gradient-bg text-slate-100 min-h-screen flex flex-col justify-start p-2 md:p-4 overflow-x-hidden">
+
+  <header class="flex flex-wrap items-center justify-between gap-2 sm:flex-nowrap bg-slate-800/80 backdrop-blur border border-slate-700/60 rounded-xl p-2 md:px-4 mb-2 shadow-lg">
+    <div class="flex items-center gap-2">
+      <div class="p-2 bg-indigo-600 rounded-lg shadow">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-sm md:text-lg font-bold leading-tight text-white">Äänen Taajuushaaste</h1>
+        <p class="text-xs text-slate-400 hidden sm:block">Osu kohdetaajuuteen hyräilemällä 3 sekunnin ajan</p>
+      </div>
+    </div>
+
+    <!-- Level Selector Tabs -->
+    <div class="ml-auto flex bg-slate-900/80 p-1 rounded-lg border border-slate-700/50 text-[10px] sm:text-xs font-semibold gap-0.5 sm:gap-1">
+      <button id="lvl-1-btn" onclick="setLevel(1)" class="px-1.5 sm:px-2.5 py-1 rounded-md transition-all bg-indigo-600 text-white shadow">Taso 1</button>
+      <button id="lvl-2-btn" onclick="setLevel(2)" class="px-1.5 sm:px-2.5 py-1 rounded-md transition-all text-slate-400 hover:text-white">Taso 2</button>
+      <button id="lvl-3-btn" onclick="setLevel(3)" class="px-1.5 sm:px-2.5 py-1 rounded-md transition-all text-slate-400 hover:text-white">Taso 3</button>
+    </div>
+  </header>
+
+  <main class="grid grid-cols-1 md:grid-cols-12 gap-3 max-w-6xl mx-auto w-full">
+    
+    <!-- Left Card: Target Tone & Controls -->
+    <section class="md:col-span-5 bg-slate-800/60 border border-slate-700/50 backdrop-blur rounded-2xl p-3 md:p-4 flex flex-col justify-between shadow-xl">
+      <div>
+        <!-- Level Progress & Target Title -->
+        <div class="flex justify-between items-center mb-2">
+          <span id="level-title" class="text-xs font-bold uppercase tracking-wider text-indigo-400">Taso 1 • Helppo</span>
+          <span id="target-counter" class="text-xs font-semibold bg-slate-700/60 px-2 py-0.5 rounded-full text-slate-300">Tehtävä 1 / 3</span>
+        </div>
+
+        <!-- Target Frequency Display -->
+        <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-700/40 text-center mb-3">
+          <span class="text-xs text-slate-400 font-medium block mb-0.5">Kohdetaajuus</span>
+          <div class="flex justify-center items-baseline gap-1">
+            <span id="target-hz-display" class="text-3xl md:text-4xl font-extrabold text-indigo-300 tracking-tight">262</span>
+            <span class="text-lg font-bold text-indigo-400">Hz</span>
+          </div>
+          <span id="tolerance-display" class="text-[11px] text-emerald-400 font-medium block mt-1">Sallittu heitto: ±25 Hz</span>
+        </div>
+
+        <!-- Sound Controls -->
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <button id="play-sound-btn" onclick="toggleReferenceSound()" class="flex items-center justify-center gap-1.5 bg-indigo-600/90 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2 px-3 rounded-xl transition text-xs shadow-md active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            </svg>
+            <span id="play-btn-text">Kuuntele ääni</span>
+          </button>
+
+          <button id="mic-toggle-btn" onclick="toggleMicrophone()" class="flex items-center justify-center gap-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white font-semibold py-2 px-3 rounded-xl transition text-xs shadow-md active:scale-95">
+            <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+            <span id="mic-btn-text">Käynnistä mikki</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Hold Progress Timer -->
+      <div class="bg-slate-900/60 rounded-xl p-2.5 border border-slate-700/40">
+        <div class="flex justify-between text-xs font-semibold mb-1">
+          <span class="text-slate-300">Ajanpito kohdealueella</span>
+          <span id="hold-timer-text" class="text-emerald-400">0.0 / 3.0 s</span>
+        </div>
+        <div class="w-full bg-slate-950 rounded-full h-3 overflow-hidden border border-slate-800 p-0.5">
+          <div id="hold-progress-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-75 w-0 progress-glow"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="md:col-span-7 bg-slate-800/60 border border-slate-700/50 backdrop-blur rounded-2xl p-3 md:p-4 flex flex-col justify-between shadow-xl">
+      
+      <!-- Realtime Detected Pitch Banner -->
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <span class="relative flex h-2.5 w-2.5">
+            <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75"></span>
+            <span id="status-dot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-500"></span>
+          </span>
+          <span id="status-text" class="text-xs font-semibold text-slate-400">Mikrofoni ei käytössä</span>
+        </div>
+        <div class="text-right">
+          <span class="text-xs text-slate-400">Havaittu: </span>
+          <span id="detected-hz-text" class="text-base font-bold text-slate-200">-- Hz</span>
+        </div>
+      </div>
+
+      <!-- Pitch Tuner Gauge Box -->
+      <div class="relative bg-slate-950 rounded-xl p-4 border border-slate-800 my-2 my-auto flex flex-col justify-center min-h-[140px]">
+        
+        <!-- Frequency Ruler Overlay -->
+        <div class="flex justify-between text-[10px] text-slate-500 font-mono mb-1">
+          <span id="min-scale-text">100 Hz</span>
+          <span id="target-scale-text" class="text-indigo-400 font-bold">262 Hz</span>
+          <span id="max-scale-text">350 Hz</span>
+        </div>
+
+        <!-- Gauge Bar Container -->
+        <div class="relative w-full h-10 bg-slate-900 rounded-lg overflow-hidden border border-slate-800 flex items-center">
+          
+          <!-- Target Zone Highlight -->
+          <div id="tuner-target-zone" class="absolute h-full tuner-target-zone transition-all duration-300" style="left: 35%; width: 30%;"></div>
+          
+          <!-- Center Reference Line -->
+          <div class="absolute left-1/2 top-0 bottom-0 w-0.5 bg-indigo-500/50 z-0"></div>
+
+          <!-- Live Pitch Indicator Line / Dot -->
+          <div id="pitch-indicator" class="absolute top-0 bottom-0 w-3 -ml-1.5 flex items-center justify-center transition-all duration-75 z-10 opacity-0" style="left: 50%;">
+            <div class="w-2.5 h-8 bg-amber-400 rounded-full shadow-[0_0_10px_#fbbf24]"></div>
+          </div>
+        </div>
+
+        <!-- Pitch Status Message Pill -->
+        <div class="mt-3 text-center">
+          <span id="pitch-feedback-pill" class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-400 transition-all">
+            Aloita hyräilemällä kohdeääntä
+          </span>
+        </div>
+      </div>
+
+      <!-- Quick Helpful Tip -->
+      <div class="text-[11px] text-slate-400 bg-slate-900/40 border border-slate-800 rounded-lg p-2 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Vinkki: Paina "Kuuntele ääni", muista sävel mielessäsi ja hyräile tasaisesti mikrofoniin.</span>
+      </div>
+
+    </section>
+  </main>
+
+  <section class="bg-slate-800/60 border border-slate-700/50 backdrop-blur rounded-2xl p-2.5 md:p-3 mt-3 max-w-6xl mx-auto w-full shadow-xl">
+    <div class="flex items-center justify-between mb-1">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+          </svg>
+          Nuottiviivasto (G-avain)
+        </span>
+        <span id="staff-note-badge" class="text-xs font-bold bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded border border-amber-400/40">Kohdenuotti: C4</span>
+      </div>
+    </div>
+
+    <!-- Staff SVG Container -->
+    <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-2 flex justify-center items-center overflow-x-auto min-h-[95px]">
+      <svg id="staff-svg" class="w-full max-w-2xl h-20 md:h-24" viewBox="0 0 400 110" preserveAspectRatio="xMidYMid meet">
+        <!-- SVG rendered via JavaScript -->
+      </svg>
+    </div>
+  </section>
+
+  <div id="success-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl transform transition-all">
+      <div class="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-3 border border-emerald-500/30">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <h2 id="modal-title" class="text-xl font-extrabold text-white mb-1">Loistavaa työtä!</h2>
+      <p id="modal-desc" class="text-xs text-slate-300 mb-4">Pidit äänen tasaisena 3 sekuntia!</p>
+      
+      <button id="modal-next-btn" onclick="nextTaskOrLevel()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-4 rounded-xl transition text-xs shadow-lg active:scale-95">
+        Seuraava tehtävä →
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const LEVELS = {
+      1: {
+        name: "Taso 1 • Helppo",
+        tolerance: 25, // ±25 Hz
+        targets: [
+          { note: "C4", hz: 262 }, // Keski-C (apuviiva viivaston alla)
+          { note: "E4", hz: 330 }, // 1. viiva
+          { note: "G4", hz: 392 }  // 2. viiva
+        ]
+      },
+      2: {
+        name: "Taso 2 • Keskivaikea",
+        tolerance: 20, // ±20 Hz
+        targets: [
+          { note: "D4", hz: 294 }, // 1. viivan alla
+          { note: "F4", hz: 349 }, // 1. väli
+          { note: "A4", hz: 440 }, // 2. väli
+          { note: "C5", hz: 523 }  // 3. väli
+        ]
+      },
+      3: {
+        name: "Taso 3 • Taituri",
+        tolerance: 15, // ±15 Hz
+        targets: [
+          { note: "E4", hz: 330 }, // 1. viiva
+          { note: "G4", hz: 392 }, // 2. viiva
+          { note: "H4", hz: 494 }, // 3. viiva
+          { note: "D5", hz: 587 }  // 4. viiva
+        ]
+      }
+    };
+
+    let currentLevel = 1;
+    let currentTargetIndex = 0;
+    // Web Audio State
+    let audioCtx = null;
+    let analyser = null;
+    let micStream = null;
+    let oscNode = null;
+    let isMicActive = false;
+    let isMicStarting = false;
+    let isPlayingRef = false;
+    
+    // Game loop & Timer state variables
+    let animationFrameId = null;
+    let lastPitchAnalysisTime = 0;
+    let matchStartTime = null;
+    let currentHoldTime = 0;
+    const REQUIRED_HOLD_TIME = 3.0; // 3 seconds requirement
+
+    let pitchBuffer = [];
+    const BUFFER_SIZE = 5; // Low-pass median filter window size
+    let outOfZoneStartTime = null;
+    const GRACE_PERIOD_MS = 450; // Grace period buffer before resetting hold timer
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioCtx();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function toggleReferenceSound() {
+      if (isMicActive || isMicStarting) return;
+      if (isPlayingRef) {
+        stopReferenceSound();
+      } else {
+        startReferenceSound();
+      }
+    }
+
+    function startReferenceSound() {
+      if (isMicActive || isMicStarting) return;
+      const ctx = getAudioContext();
+      if (isPlayingRef) stopReferenceSound();
+
+      const targetHz = getTargetHz();
+      oscNode = ctx.createOscillator();
+      const mainGain = ctx.createGain();
+
+      oscNode.type = 'sine';
+
+      oscNode.frequency.setValueAtTime(targetHz, ctx.currentTime);
+      mainGain.gain.setValueAtTime(0.2, ctx.currentTime);
+
+      oscNode.connect(mainGain);
+      mainGain.connect(ctx.destination);
+
+      oscNode.start();
+      isPlayingRef = true;
+      updateReferenceSoundButton();
+
+      // Update UI button state
+      document.getElementById('play-btn-text').innerText = "Pysäytä ääni";
+      document.getElementById('play-sound-btn').classList.replace('bg-indigo-600/90', 'bg-amber-600/90');
+    }
+
+    function updateReferenceSoundButton() {
+      const btn = document.getElementById('play-sound-btn');
+      if (btn) btn.disabled = isMicActive || isMicStarting;
+    }
+
+    function stopReferenceSound() {
+      if (oscNode) {
+        try { oscNode.stop(); oscNode.disconnect(); } catch (e) {}
+        oscNode = null;
+      }
+      isPlayingRef = false;
+      updateReferenceSoundButton();
+
+      // Update UI button state
+      const btnText = document.getElementById('play-btn-text');
+      const btn = document.getElementById('play-sound-btn');
+      if (btnText) btnText.innerText = "Kuuntele ääni";
+      if (btn) btn.classList.replace('bg-amber-600/90', 'bg-indigo-600/90');
+    }
+
+    function getSmoothedPitch(rawPitch) {
+      pitchBuffer.push(rawPitch);
+      if (pitchBuffer.length > BUFFER_SIZE) {
+        pitchBuffer.shift();
+      }
+      const sorted = [...pitchBuffer].sort((a, b) => a - b);
+      return sorted[Math.floor(sorted.length / 2)];
+    }
+
+    function init() {
+      updateUIForCurrentTask();
+    }
+
+    function setLevel(lvl) {
+      if (isPlayingRef) stopReferenceSound();
+      currentLevel = lvl;
+      currentTargetIndex = 0;
+      resetHoldTimer();
+
+      [1, 2, 3].forEach(l => {
+        const btn = document.getElementById(`lvl-${l}-btn`);
+        if (l === lvl) {
+          btn.className = "px-2.5 py-1 rounded-md transition-all bg-indigo-600 text-white shadow";
+        } else {
+          btn.className = "px-2.5 py-1 rounded-md transition-all text-slate-400 hover:text-white";
+        }
+      });
+
+      updateUIForCurrentTask();
+    }
+
+    function getTargetData() {
+      return LEVELS[currentLevel].targets[currentTargetIndex];
+    }
+
+    function getTargetHz() {
+      return getTargetData().hz;
+    }
+
+    function getTargetEquivalentPitch(pitch) {
+      const targetHz = getTargetHz();
+      const tolerance = LEVELS[currentLevel].tolerance;
+      if (Math.abs(pitch - targetHz) <= tolerance) return pitch;
+      if (Math.abs(pitch * 2 - targetHz) <= tolerance) return pitch * 2;
+      return pitch;
+    }
+
+    function getTargetNote() {
+      return getTargetData().note;
+    }
+
+    function updateUIForCurrentTask() {
+      const levelData = LEVELS[currentLevel];
+      const targetObj = getTargetData();
+      const targetHz = getTargetHz();
+      const targetNote = getTargetNote();
+
+      document.getElementById('level-title').innerText = levelData.name;
+      document.getElementById('target-counter').innerText = `Tehtävä ${currentTargetIndex + 1} / ${levelData.targets.length}`;
+      document.getElementById('target-hz-display').innerText = Math.round(targetHz);
+      document.getElementById('tolerance-display').innerText = `Sallittu heitto: ±${levelData.tolerance} Hz`;
+
+      const minHz = Math.max(40, targetHz - 80);
+      const maxHz = targetHz + 80;
+
+      document.getElementById('min-scale-text').innerText = `${Math.round(minHz)} Hz`;
+      document.getElementById('target-scale-text').innerText = `${Math.round(targetHz)} Hz (${targetNote})`;
+      document.getElementById('max-scale-text').innerText = `${Math.round(maxHz)} Hz`;
+
+      const tolerance = levelData.tolerance;
+      const zoneStartHz = targetHz - tolerance;
+      const zoneEndHz = targetHz + tolerance;
+
+      const leftPercent = ((zoneStartHz - minHz) / (maxHz - minHz)) * 100;
+      const widthPercent = ((zoneEndHz - zoneStartHz) / (maxHz - minHz)) * 100;
+
+      const targetZoneEl = document.getElementById('tuner-target-zone');
+      targetZoneEl.style.left = `${Math.max(0, leftPercent)}%`;
+      targetZoneEl.style.width = `${Math.min(100, widthPercent)}%`;
+
+      resetHoldTimer();
+      renderStaff();
+    }
+
+    function getDiatonicIndex(noteName) {
+      const [, letter, octave] = noteName.match(/^([A-H])(\d)$/);
+      const letterIndex = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, H: 6, B: 6 }[letter];
+      return (Number(octave) - 4) * 7 + letterIndex;
+    }
+
+    function renderStaff(livePitchHz = null) {
+      const svg = document.getElementById('staff-svg');
+      if (!svg) return;
+
+      const targetObj = getTargetData();
+      const targetNote = getTargetNote();
+      const targetHz = getTargetHz();
+      document.getElementById('staff-note-badge').innerText = `Kohdenuotti: ${targetNote} (${Math.round(targetHz)} Hz)`;
+
+      const diatonicIndex = getDiatonicIndex(targetNote);
+
+      const lineGap = 12; // Gap between staff lines
+      const line1Y = 74;  // E4 is line 1 (bottom line of staff)
+      const baseStaffLinesY = [
+        line1Y - lineGap * 4,
+        line1Y - lineGap * 3,
+        line1Y - lineGap * 2,
+        line1Y - lineGap,
+        line1Y
+      ];
+      const baseTargetY = line1Y - (diatonicIndex - 2) * (lineGap / 2);
+
+      const baseLedgerLines = [];
+      for (let idx = 0; idx >= diatonicIndex; idx -= 2) {
+        baseLedgerLines.push(line1Y + (2 - idx) * (lineGap / 2));
+      }
+      for (let idx = 12; idx <= diatonicIndex; idx += 2) {
+        baseLedgerLines.push(line1Y - (idx - 2) * (lineGap / 2));
+      }
+
+      const contentYs = [...baseStaffLinesY, baseTargetY, ...baseLedgerLines];
+      const minContentY = Math.min(...contentYs);
+      const maxContentY = Math.max(...contentYs);
+      const staffOffset = 10 - minContentY;
+      const viewBoxHeight = maxContentY - minContentY + 20;
+      const staffLinesY = baseStaffLinesY.map(y => y + staffOffset);
+      const targetY = baseTargetY + staffOffset;
+      const ledgerLinesNeeded = baseLedgerLines.map(y => y + staffOffset);
+
+      svg.setAttribute("viewBox", `0 0 400 ${viewBoxHeight}`);
+
+      let svgContent = '';
+
+      staffLinesY.forEach(y => {
+        svgContent += `<line x1="30" y1="${y}" x2="370" y2="${y}" stroke="#475569" stroke-width="1.5" />`;
+      });
+
+      svgContent += `<line x1="30" y1="${staffLinesY[0]}" x2="30" y2="${staffLinesY[4]}" stroke="#475569" stroke-width="2" />`;
+      svgContent += `<line x1="370" y1="${staffLinesY[0]}" x2="370" y2="${staffLinesY[4]}" stroke="#475569" stroke-width="2" />`;
+
+      // Draw Treble Clef Symbol (G-avain)
+      svgContent += `
+        <g transform="translate(38, ${staffLinesY[0] - 8})" fill="#a5b4fc">
+          <text x="0" y="44" font-family="serif" font-size="44" font-weight="bold">𝄠</text>
+        </g>`;
+
+      // Ledger Lines
+      ledgerLinesNeeded.forEach(ly => {
+        svgContent += `<line x1="180" y1="${ly}" x2="220" y2="${ly}" stroke="#fbbf24" stroke-width="1.5" />`;
+      });
+
+      // Target Notehead
+      const stemUp = targetY >= staffLinesY[2];
+      svgContent += `
+        <g transform="translate(200, ${targetY})">
+          <ellipse cx="0" cy="0" rx="8" ry="6" fill="#fbbf24" opacity="0.3" class="animate-pulse" />
+          <ellipse cx="0" cy="0" rx="7" ry="5" fill="#fbbf24" transform="rotate(-20)" />
+          <line x1="${stemUp ? 6 : -6}" y1="0" x2="${stemUp ? 6 : -6}" y2="${stemUp ? -28 : 28}" stroke="#fbbf24" stroke-width="2" />
+          <rect x="11" y="-8" width="${targetNote.length * 7 + 4}" height="15" fill="#020617" />
+          <text x="14" y="4" fill="#fbbf24" font-size="11" font-weight="extrabold">${targetNote}</text>
+        </g>`;
+
+      // Live Pitch Indicator
+      if (isMicActive && livePitchHz && livePitchHz > 50) {
+        const liveSemitones = 12 * Math.log2(livePitchHz / 261.63);
+        const liveDiatonic = (liveSemitones * 7) / 12;
+
+        let liveY = line1Y - (liveDiatonic - 2) * (lineGap / 2) + staffOffset;
+        liveY = Math.max(10, Math.min(viewBoxHeight - 10, liveY));
+
+        const isClose = Math.abs(getTargetEquivalentPitch(livePitchHz) - targetHz) <= LEVELS[currentLevel].tolerance;
+        const liveColor = isClose ? "#10b981" : "#38bdf8";
+
+        svgContent += `
+          <g transform="translate(280, ${liveY})">
+            <circle cx="0" cy="0" r="7" fill="${liveColor}" opacity="0.9" />
+            <circle cx="0" cy="0" r="10" fill="none" stroke="${liveColor}" stroke-width="1.5" class="animate-ping" opacity="0.6" />
+            <text x="12" y="4" fill="${liveColor}" font-size="10" font-weight="bold">${Math.round(livePitchHz)} Hz</text>
+          </g>`;
+      }
+
+      svg.innerHTML = svgContent;
+    }
+
+    async function toggleMicrophone() {
+      if (isMicActive) {
+        stopMicrophone();
+      } else {
+        await startMicrophone();
+      }
+    }
+
+    async function startMicrophone() {
+      if (isMicActive || isMicStarting) return;
+      isMicStarting = true;
+      stopReferenceSound();
+      updateReferenceSoundButton();
+      document.getElementById('mic-toggle-btn').disabled = true;
+      document.getElementById('mic-btn-text').innerText = "Odotetaan lupaa...";
+
+      try {
+        const ctx = getAudioContext();
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          }
+        });
+        
+        const source = ctx.createMediaStreamSource(micStream);
+        analyser = ctx.createAnalyser();
+        analyser.fftSize = 4096;
+        source.connect(analyser);
+
+        isMicStarting = false;
+        isMicActive = true;
+        pitchBuffer = [];
+        lastPitchAnalysisTime = 0;
+        updateReferenceSoundButton();
+
+        document.getElementById('mic-btn-text').innerText = "Sulje mikki";
+        document.getElementById('mic-toggle-btn').disabled = false;
+        document.getElementById('mic-toggle-btn').classList.replace('bg-emerald-600/90', 'bg-rose-600/90');
+        
+        document.getElementById('status-ping').className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
+        document.getElementById('status-dot').className = "relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500";
+        document.getElementById('status-text').innerText = "Mikrofoni kuuntelee...";
+
+        processAudioLoop();
+
+      } catch (err) {
+        isMicStarting = false;
+        if (micStream) micStream.getTracks().forEach(track => track.stop());
+        micStream = null;
+        analyser = null;
+        updateReferenceSoundButton();
+        document.getElementById('mic-btn-text').innerText = "Käynnistä mikki";
+        document.getElementById('mic-toggle-btn').disabled = false;
+        alert("Mikrofonin käynnistys epäonnistui. Varmista, että olet antanut selaimelle luvan käyttää mikrofonia.");
+        console.error(err);
+      }
+    }
+
+    function stopMicrophone() {
+      if (micStream) {
+        micStream.getTracks().forEach(track => track.stop());
+        micStream = null;
+      }
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      isMicActive = false;
+      isMicStarting = false;
+      pitchBuffer = [];
+      analyser = null;
+      updateReferenceSoundButton();
+
+      document.getElementById('mic-btn-text').innerText = "Käynnistä mikki";
+      document.getElementById('mic-toggle-btn').disabled = false;
+      document.getElementById('mic-toggle-btn').classList.replace('bg-rose-600/90', 'bg-emerald-600/90');
+      
+      document.getElementById('status-ping').className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75";
+      document.getElementById('status-dot').className = "relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-500";
+      document.getElementById('status-text').innerText = "Mikrofoni ei käytössä";
+      
+      document.getElementById('detected-hz-text').innerText = "-- Hz";
+      document.getElementById('pitch-indicator').style.opacity = "0";
+
+      resetHoldTimer();
+    }
+
+    function autoCorrelate(buffer, sampleRate) {
+      const SIZE = buffer.length;
+      let mean = 0;
+
+      for (let i = 0; i < SIZE; i++) {
+        mean += buffer[i];
+      }
+      mean /= SIZE;
+
+      let rms = 0;
+      for (let i = 0; i < SIZE; i++) {
+        buffer[i] -= mean;
+        rms += buffer[i] * buffer[i];
+      }
+      rms = Math.sqrt(rms / SIZE);
+      if (rms < 0.002) return -1;
+
+      const MIN_PITCH_HZ = 50;
+      const MAX_PITCH_HZ = 1400;
+      const minLag = Math.floor(sampleRate / MAX_PITCH_HZ);
+      const maxLag = Math.min(Math.ceil(sampleRate / MIN_PITCH_HZ), Math.floor(SIZE / 2));
+      const normalizedDifference = new Float64Array(maxLag + 1);
+      let runningDifference = 0;
+
+      for (let lag = 1; lag <= maxLag; lag++) {
+        let sum = 0;
+        for (let i = 0; i < SIZE - lag; i++) {
+          const delta = buffer[i] - buffer[i + lag];
+          sum += delta * delta;
+        }
+        runningDifference += sum;
+        normalizedDifference[lag] = runningDifference === 0 ? 1 : sum * lag / runningDifference;
+      }
+
+      let period = -1;
+      for (let lag = minLag; lag <= maxLag; lag++) {
+        if (normalizedDifference[lag] < 0.2) {
+          while (lag < maxLag && normalizedDifference[lag + 1] < normalizedDifference[lag]) {
+            lag++;
+          }
+          period = lag;
+          break;
+        }
+      }
+      if (period < 0) return -1;
+
+      const octaveBelowPeriod = period * 2;
+      if (
+        octaveBelowPeriod <= maxLag &&
+        normalizedDifference[octaveBelowPeriod] < 0.1 &&
+        normalizedDifference[octaveBelowPeriod] < normalizedDifference[period] * 0.5
+      ) {
+        period = octaveBelowPeriod;
+      }
+
+      if (period > 1 && period < maxLag) {
+        const before = normalizedDifference[period - 1];
+        const center = normalizedDifference[period];
+        const after = normalizedDifference[period + 1];
+        const curvature = before - 2 * center + after;
+        if (curvature !== 0) {
+          period += 0.5 * (before - after) / curvature;
+        }
+      }
+
+      return sampleRate / period;
+    }
+
+    function processAudioLoop() {
+      if (!isMicActive || !analyser) return;
+
+      const now = performance.now();
+      if (now - lastPitchAnalysisTime >= 50) {
+        lastPitchAnalysisTime = now;
+        const buffer = new Float32Array(analyser.fftSize);
+        analyser.getFloatTimeDomainData(buffer);
+
+        const rawPitch = autoCorrelate(buffer, audioCtx.sampleRate);
+
+        if (rawPitch !== -1 && rawPitch >= 50 && rawPitch <= 1400) {
+          const smoothedPitch = getSmoothedPitch(rawPitch);
+          updatePitchGauge(smoothedPitch);
+          renderStaff(smoothedPitch);
+        } else {
+          pitchBuffer = [];
+          document.getElementById('detected-hz-text').innerText = "-- Hz";
+          document.getElementById('pitch-indicator').style.opacity = "0";
+          updatePitchFeedback("Hyräile mikrofoniin...", "bg-slate-800", "text-slate-400");
+          renderStaff(null);
+          
+          checkGracePeriodTimeout();
+        }
+      }
+
+      animationFrameId = requestAnimationFrame(processAudioLoop);
+    }
+
+    function updatePitchGauge(pitch) {
+      const targetHz = getTargetHz();
+      const tolerance = LEVELS[currentLevel].tolerance;
+
+      const roundedPitch = Math.round(pitch);
+      document.getElementById('detected-hz-text').innerText = `${roundedPitch} Hz`;
+
+      const minHz = Math.max(40, targetHz - 80);
+      const maxHz = targetHz + 80;
+
+      const matchingPitch = getTargetEquivalentPitch(pitch);
+      let clampedPitch = Math.max(minHz, Math.min(maxHz, matchingPitch));
+      let percent = ((clampedPitch - minHz) / (maxHz - minHz)) * 100;
+
+      const pitchIndicator = document.getElementById('pitch-indicator');
+      pitchIndicator.style.left = `${percent}%`;
+      pitchIndicator.style.opacity = "1";
+
+      const diff = matchingPitch - targetHz;
+
+      if (Math.abs(diff) <= tolerance) {
+        outOfZoneStartTime = null;
+        updatePitchFeedback("OULALAA! KOHDEALUEELLA!", "bg-emerald-600", "text-white");
+        incrementHoldTimer();
+      } else {
+        if (!outOfZoneStartTime) {
+          outOfZoneStartTime = performance.now();
+        }
+
+        const outDuration = performance.now() - outOfZoneStartTime;
+
+        if (outDuration < GRACE_PERIOD_MS) {
+          if (diff < -tolerance) {
+            updatePitchFeedback("HIEMAN MATALA ↑", "bg-amber-600/80", "text-amber-100");
+          } else {
+            updatePitchFeedback("HIEMAN KORKEA ↓", "bg-amber-600/80", "text-amber-100");
+          }
+        } else {
+          if (diff < -tolerance) {
+            updatePitchFeedback("LIIAN MATALA ↑", "bg-amber-600/80", "text-amber-100");
+          } else {
+            updatePitchFeedback("LIIAN KORKEA ↓", "bg-amber-600/80", "text-amber-100");
+          }
+          resetHoldTimer();
+        }
+      }
+    }
+
+    function checkGracePeriodTimeout() {
+      if (!outOfZoneStartTime) {
+        outOfZoneStartTime = performance.now();
+      }
+      const outDuration = performance.now() - outOfZoneStartTime;
+      if (outDuration >= GRACE_PERIOD_MS) {
+        resetHoldTimer();
+      }
+    }
+
+    function updatePitchFeedback(text, bgClass, textClass) {
+      const pill = document.getElementById('pitch-feedback-pill');
+      pill.innerText = text;
+      pill.className = `inline-block px-3 py-1 rounded-full text-xs font-bold transition-all ${bgClass} ${textClass}`;
+    }
+
+    function incrementHoldTimer() {
+      if (!matchStartTime) {
+        matchStartTime = performance.now();
+      }
+
+      const elapsed = (performance.now() - matchStartTime) / 1000;
+      currentHoldTime = Math.min(REQUIRED_HOLD_TIME, elapsed);
+
+      const progressPercent = (currentHoldTime / REQUIRED_HOLD_TIME) * 100;
+      document.getElementById('hold-progress-bar').style.width = `${progressPercent}%`;
+      document.getElementById('hold-timer-text').innerText = `${currentHoldTime.toFixed(1)} / ${REQUIRED_HOLD_TIME.toFixed(1)} s`;
+
+      if (currentHoldTime >= REQUIRED_HOLD_TIME) {
+        onTaskSuccess();
+      }
+    }
+
+    function resetHoldTimer() {
+      matchStartTime = null;
+      outOfZoneStartTime = null;
+      currentHoldTime = 0;
+      document.getElementById('hold-progress-bar').style.width = "0%";
+      document.getElementById('hold-timer-text').innerText = `0.0 / ${REQUIRED_HOLD_TIME.toFixed(1)} s`;
+    }
+
+    function onTaskSuccess() {
+      stopMicrophone();
+      if (isPlayingRef) stopReferenceSound();
+
+      playSuccessChime();
+
+      const isLastTaskInLevel = (currentTargetIndex === LEVELS[currentLevel].targets.length - 1);
+      const targetObj = getTargetData();
+      
+      const modal = document.getElementById('success-modal');
+      const title = document.getElementById('modal-title');
+      const desc = document.getElementById('modal-desc');
+      const nextBtn = document.getElementById('modal-next-btn');
+
+      if (isLastTaskInLevel) {
+        title.innerText = "Taso Suoritettu! 🎉";
+        desc.innerText = `Hienoa! LÄPÄISIT ${LEVELS[currentLevel].name.toUpperCase()}!`;
+        nextBtn.innerText = currentLevel < 3 ? "Siirry seuraavalle tasolle →" : "Pelaa uudelleen ↺";
+      } else {
+        title.innerText = "Mahtavaa! 🎯";
+        desc.innerText = `Onnistuit pitämään sävelen ${getTargetNote()} (${Math.round(getTargetHz())} Hz) 3 sekuntia!`;
+        nextBtn.innerText = "Seuraava kohdeääni →";
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function nextTaskOrLevel() {
+      const modal = document.getElementById('success-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+
+      const isLastTaskInLevel = (currentTargetIndex === LEVELS[currentLevel].targets.length - 1);
+
+      if (isLastTaskInLevel) {
+        if (currentLevel < 3) {
+          setLevel(currentLevel + 1);
+        } else {
+          setLevel(1);
+        }
+      } else {
+        currentTargetIndex++;
+        updateUIForCurrentTask();
+      }
+    }
+
+    function playSuccessChime() {
+      const ctx = getAudioContext();
+      const now = ctx.currentTime;
+      
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.1);
+      osc.frequency.setValueAtTime(783.99, now + 0.2);
+
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.6);
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
